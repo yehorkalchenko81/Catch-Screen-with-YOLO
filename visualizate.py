@@ -5,9 +5,11 @@ import numpy as np
 import torch
 from yolov5 import YOLOv5
 
-# Ініціалізація YOLOv5
+from getscreen import capture_screen_excluding_area
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model = YOLOv5('yolov5s.pt', device=device)
+model.model.classes = [0]
 
 # Налаштування matplotlib
 plt.switch_backend('TkAgg')
@@ -17,20 +19,17 @@ plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 fig.canvas.mpl_connect('close_event', lambda event: plt.close(fig))
 
 with mss.mss() as sct:
+    ax.imshow(np.random.random((640, 360, 3)))
+    plt.pause(0.0001)  # Пауза для оновлення вікна
     while plt.fignum_exists(fig.number):
         # Захоплення скріншота
-        screenshot = sct.grab(sct.monitors[0])
-        img = Image.frombytes("RGB", (screenshot.width, screenshot.height), screenshot.rgb).resize((640, 360))
+        img = capture_screen_excluding_area().resize((640, 360))
 
-        # Перетворення зображення у формат NumPy масиву
         img_np = np.array(img)
 
-        # Обробка зображення за допомогою YOLOv5
         results = model.predict(img_np)
 
-        # Отримання зображення з результатами
-        # Припускаємо, що render() повертає масив з формою (1, height, width, channels)
-        predicted_img = results.render()[0]  # Отримати перший (і єдиний) зображення з партії
+        predicted_img = results.render()[0]
 
         # Відображення зображення
         ax.imshow(predicted_img)
